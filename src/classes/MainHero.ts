@@ -10,12 +10,13 @@ export class MainHero implements Coordinates, Drawable, Follower {
   private readonly maxFollowers: number = appConstants.hero.MAX_FOLLOWERS;
   private readonly speed: number = appConstants.hero.SPEED;
   private sprite: HTMLImageElement;
-  private spriteLoaded: boolean = false; // Перевірка стану завантаження спрайту
+  private spriteLoaded: boolean = false;
   private frame: number = 0;
-  private frameWidth: number = 50; // Ширина одного кадру спрайту
-  private frameHeight: number = 50; // Висота одного кадру спрайту
-  private animationSpeed: number = 10; // Кількість кадрів перед переходом на наступний кадр
+  private frameWidth: number = 48;
+  private frameHeight: number = 48;
+  private animationSpeed: number = 60;
   private animationCounter: number = 0;
+  private direction: number = 0;
 
   constructor(x: number, y: number) {
     this._x = x;
@@ -23,11 +24,10 @@ export class MainHero implements Coordinates, Drawable, Follower {
     this.targetX = x;
     this.targetY = y;
 
-    // Завантаження спрайту
     this.sprite = new Image();
-    this.sprite.src = "./george.png"; // Замініть на правильний шлях до вашого зображення
+    this.sprite.src = "./george.png";
     this.sprite.onload = () => {
-      this.spriteLoaded = true; // Встановлюємо прапорець після завантаження
+      this.spriteLoaded = true;
     };
     this.sprite.onerror = () => {
       console.error("Failed to load sprite image!");
@@ -58,13 +58,11 @@ export class MainHero implements Coordinates, Drawable, Follower {
   moveTo(x: number, y: number): void {
     this.targetX = x;
     this.targetY = y;
-    console.log("this._counter", this._counter);
   }
 
-  // update(): void {
-  //   this.x += (this.targetX - this.x) * this.speed;
-  //   this.y += (this.targetY - this.y) * this.speed;
-  // }
+  getSpeed() {
+    return this.speed;
+  }
 
   update(): void {
     const dx = this.targetX - this.x;
@@ -75,12 +73,17 @@ export class MainHero implements Coordinates, Drawable, Follower {
       this._x += (dx / distance) * this.speed * 100;
       this._y += (dy / distance) * this.speed * 100;
 
-      // Оновлення анімації
       this.animationCounter++;
       if (this.animationCounter >= this.animationSpeed) {
-        this.frame = (this.frame + 1) % 4; // Перехід до наступного кадру (0–3)
+        this.frame = (this.frame + 1) % 4;
         this.animationCounter = 0;
       }
+    }
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      this.direction = dx > 0 ? 1 : 3;
+    } else {
+      this.direction = dy > 0 ? 2 : 0;
     }
   }
 
@@ -90,12 +93,6 @@ export class MainHero implements Coordinates, Drawable, Follower {
     }
   }
 
-  // decrementCounter(): void {
-  //   if (this._counter > 0) {
-  //     this._counter--;
-  //   }
-  // }
-
   resetCounter(): void {
     this._counter = 0;
   }
@@ -104,33 +101,24 @@ export class MainHero implements Coordinates, Drawable, Follower {
     return this._counter < this.maxFollowers;
   }
 
-  // draw(ctx: CanvasRenderingContext2D): void {
-  //   ctx.fillStyle = "#e62750";
-  //   ctx.beginPath();
-  //   ctx.arc(this.x, this.y, 20, 0, Math.PI * 2);
-  //   ctx.fill();
-  // }
-
-  draw(ctx: CanvasRenderingContext2D): void {
-    if (!this.spriteLoaded) {
-      // Якщо спрайт ще не завантажено, нічого не малюємо
-      return;
+  draw(ctx: CanvasRenderingContext2D) {
+    if (this.spriteLoaded) {
+      ctx.drawImage(
+        this.sprite,
+        this.frame * this.frameWidth,
+        this.direction * this.frameHeight,
+        this.frameWidth,
+        this.frameHeight,
+        this.x - this.frameWidth / 2,
+        this.y - this.frameHeight / 2,
+        this.frameWidth,
+        this.frameHeight
+      );
+    } else {
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 10, 0, Math.PI * 2);
+      ctx.fill();
     }
-
-    // Вибір напрямку: 0 - вниз, 1 - ліворуч, 2 - праворуч, 3 - вгору
-    const direction =
-      this.targetX > this._x ? 2 : this.targetX < this._x ? 1 : 0;
-
-    ctx.drawImage(
-      this.sprite,
-      this.frame * this.frameWidth, // Вибірка потрібного кадру по горизонталі
-      direction * this.frameHeight, // Вибірка потрібного ряду по вертикалі
-      this.frameWidth, // Ширина кадру
-      this.frameHeight, // Висота кадру
-      this._x - this.frameWidth / 2, // Позиція героя по X
-      this._y - this.frameHeight / 2, // Позиція героя по Y
-      this.frameWidth, // Розмір відображення кадру по X
-      this.frameHeight // Розмір відображення кадру по Y
-    );
   }
 }

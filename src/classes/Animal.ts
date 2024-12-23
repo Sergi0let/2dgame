@@ -15,12 +15,12 @@ export class Animal implements Coordinates, Drawable, Updatable {
   private isFollowing: boolean = false;
   private inYard: boolean = false;
   private sprite: HTMLImageElement;
-  private spriteLoaded: boolean = false; // Перевірка стану завантаження спрайту
-  private frame: number = 0; // Поточний кадр для анімації
-  private direction: number = 0; // Напрямок руху (0 - вгору, 1 - праворуч, 2 - вниз, 3 - ліворуч)
-  private frameWidth: number = 128; // Ширина одного кадру спрайту
-  private frameHeight: number = 128; // Висота одного кадру спрайту
-  private animationSpeed: number = 30; // Кількість кадрів між змінами анімації
+  private spriteLoaded: boolean = false;
+  private frame: number = 0;
+  private direction: number = 0;
+  private frameWidth: number = 128;
+  private frameHeight: number = 128;
+  private animationSpeed: number = 20;
   private animationCounter: number = 0;
 
   constructor(x: number, y: number) {
@@ -28,13 +28,12 @@ export class Animal implements Coordinates, Drawable, Updatable {
     this.y = y;
     this.targetX = x;
     this.targetY = y;
-    this.speed = 0.005;
+    this.speed = 0.00005;
 
-    // Завантаження зображення
     this.sprite = new Image();
-    this.sprite.src = "./ram_walk.png"; // Вкажіть правильний шлях до вашого зображення
+    this.sprite.src = "./ram_walk.png";
     this.sprite.onload = () => {
-      this.spriteLoaded = true; // Встановлюємо прапорець після завантаження
+      this.spriteLoaded = true;
     };
     this.sprite.onerror = () => {
       console.error("Failed to load sprite image!");
@@ -56,16 +55,16 @@ export class Animal implements Coordinates, Drawable, Updatable {
     const dy = hero.y - this.y;
     const distance = Math.hypot(dx, dy);
 
-    // Визначення напрямку руху
     if (Math.abs(dx) > Math.abs(dy)) {
-      this.direction = dx > 0 ? 1 : 3; // Праворуч або ліворуч
+      this.direction = dx > 0 ? 1 : 3;
     } else {
-      this.direction = dy > 0 ? 2 : 0; // Вниз або вгору
+      this.direction = dy > 0 ? 2 : 0;
     }
 
     if (distance < 50 && !this.isFollowing && hero.canAcceptFollower()) {
       this.isFollowing = true;
       hero.incrementCounter();
+      this.speed = hero.getSpeed();
     }
 
     if (yard.addAnimalToYard(this, hero)) {
@@ -116,27 +115,24 @@ export class Animal implements Coordinates, Drawable, Updatable {
 
   draw(ctx: CanvasRenderingContext2D) {
     if (this.spriteLoaded) {
-      // Якщо спрайт завантажено, малюємо зображення
       ctx.drawImage(
         this.sprite,
-        this.frame * this.frameWidth, // Вибірка потрібного кадру по горизонталі
-        this.direction * this.frameHeight, // Вибірка ряду по вертикалі (напрямок руху)
+        this.frame * this.frameWidth,
+        this.direction * this.frameHeight,
         this.frameWidth,
         this.frameHeight,
-        this.x - this.frameWidth / 2, // Відцентровка спрайту по X
-        this.y - this.frameHeight / 2, // Відцентровка спрайту по Y
+        this.x - this.frameWidth / 2,
+        this.y - this.frameHeight / 2,
         this.frameWidth,
         this.frameHeight
       );
 
-      // Оновлення кадру для анімації
       this.animationCounter++;
       if (this.animationCounter >= this.animationSpeed) {
-        this.frame = (this.frame + 1) % 4; // Перехід до наступного кадру (0–3)
+        this.frame = (this.frame + 1) % 4;
         this.animationCounter = 0;
       }
     } else {
-      // Якщо спрайт ще не завантажено, малюємо білий круг
       ctx.fillStyle = this.inYard
         ? "green"
         : this.isFollowing

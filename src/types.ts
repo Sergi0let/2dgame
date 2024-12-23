@@ -12,6 +12,7 @@ export interface Updatable extends Coordinates {
 }
 
 export interface Follower {
+  getSpeed(): number;
   x: number;
   y: number;
   incrementCounter(): void;

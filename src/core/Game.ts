@@ -1,4 +1,5 @@
 import { Animal } from "../classes/Animal";
+import { AnimalFactory } from "../classes/AnimalFactory";
 import { MainHero } from "../classes/MainHero";
 import { Yard } from "../classes/Yard";
 import appConstants from "../utils/constants";
@@ -16,6 +17,7 @@ export class Game {
   private spawnInterval: number = 3000;
   private maxAnimals: number = 10;
   private initialAnimals: number = 5;
+  private animalFactory: AnimalFactory;
 
   constructor(canvasId: string) {
     this.width = appConstants.size.WIDTH;
@@ -24,9 +26,10 @@ export class Game {
     this.ctx = this.canvas.getContext("2d")!;
     this.hero = new MainHero(this.width / 2, this.height / 2);
     this.yard = new Yard(this.width - 120, this.height - 120);
-    this.music = new Audio("./music/west-winds.ogg"); // Шлях до музичного файлу
-    this.music.loop = true; // Музика буде повторюватися
-    this.music.volume = 0.5; // Гучність (0.0 - 1.0)
+    this.music = new Audio("./music/west-winds.ogg");
+    this.music.loop = true;
+    this.music.volume = 0.5;
+    this.animalFactory = new AnimalFactory(this.width, this.height);
 
     this.createScoreElement();
     this.spawnAnimals(this.initialAnimals);
@@ -38,29 +41,37 @@ export class Game {
 
   private createMusicControl() {
     const button = document.createElement("button");
-    button.innerText = "Toggle Music";
     button.style.position = "absolute";
     button.style.top = "10px";
     button.style.left = "10px";
+    button.style.width = "50px";
+    button.style.height = "50px";
+    button.style.border = "none";
+    button.style.borderRadius = "50%";
+    button.style.backgroundColor = "blue";
+    button.style.backgroundSize = "cover";
+    button.style.backgroundRepeat = "no-repeat";
+    button.style.backgroundImage = "url('./music_on.png')";
 
     button.addEventListener("click", () => {
       if (this.music.paused) {
         this.music.play();
-        button.innerText = "Pause Music";
+        button.style.backgroundImage = "url('./music_on.png')";
       } else {
         this.music.pause();
-        button.innerText = "Play Music";
+        button.style.backgroundImage = "url('./music_off.png')";
       }
     });
 
     document.body.appendChild(button);
   }
+
   private createCanvas(canvasId: string): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
     canvas.id = canvasId;
     canvas.width = this.width;
     canvas.height = this.height;
-    canvas.style.border = "1px solid black";
+
     document.body.appendChild(canvas);
     return canvas;
   }
@@ -75,15 +86,11 @@ export class Game {
   }
 
   private spawnAnimals(count: number) {
-    for (let i = 0; i < count; i++) {
-      let x, y;
-      do {
-        x = Math.random() * this.width;
-        y = Math.random() * this.height;
-      } while (this.isInYard(x, y));
+    const newAnimals = this.animalFactory.createMultipleAnimals(count);
 
-      this.animals.push(new Animal(x, y));
-    }
+    this.animals.push(
+      ...newAnimals.filter((animal) => !this.isInYard(animal.x, animal.y))
+    );
   }
 
   private isInYard(x: number, y: number): boolean {
@@ -95,10 +102,13 @@ export class Game {
     );
   }
 
-  private startAnimalGenerator() {
+  private startAnimalGenerator(): void {
     setInterval(() => {
       if (this.animals.length < this.maxAnimals) {
-        this.spawnAnimals(1);
+        const newAnimal = this.animalFactory.createRandomAnimal();
+        if (!this.isInYard(newAnimal.x, newAnimal.y)) {
+          this.animals.push(newAnimal);
+        }
       }
     }, this.spawnInterval);
   }
